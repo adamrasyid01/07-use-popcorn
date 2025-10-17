@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const tempMovieData = [
   {
@@ -47,6 +47,18 @@ const tempWatchedData = [
 
 const average = (arr) => arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
+function Loader() {
+  return <p className="loader">Loading....</p>;
+}
+
+function ErrorMessage({ message }) {
+  return (
+    <p className="error">
+      <span>X {message}</span>
+    </p>
+  );
+}
+
 function Navbar({ children }) {
   return (
     <nav className="nav-bar">
@@ -85,13 +97,42 @@ function NumResults() {
   );
 }
 
+const KEY = "7227245d";
+
 function Main({ children }) {
   return <main className="main">{children}</main>;
 }
 
 export default function App() {
-  const [movies, setMovies] = useState(tempMovieData);
-  const [watched, setWatched] = useState(tempWatchedData);
+  const [movies, setMovies] = useState([]);
+  const [watched, setWatched] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState("");
+  const query = "interstellar";
+
+  // Gunakan UseEffect saat fetch api
+  useEffect(function () {
+    async function fetchMovies() {
+      try {
+        setIsLoading(true);
+        const res = await fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=${query}`);
+
+        const data = await res.json();
+        setMovies(data.Search);
+        // console.log(movies);
+
+        if (!res.ok) throw new Error("Something went wrong with fetching movies");
+
+        if (data.Response === "False") throw new Error("Movie Not Found");
+      } catch (err) {
+        // console.error(err.message);
+        setIsError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchMovies();
+  }, []);
   return (
     <>
       <Navbar>
@@ -100,8 +141,11 @@ export default function App() {
         <NumResults movies={movies} />
       </Navbar>
       <Main>
-        <Box movies={movies}>
-          <MovieList movies={movies} />
+        <Box>
+          {/* {isLoading ? <Loader /> : <MovieList movies={movies} />} */}
+          {isLoading && <Loader />}
+          {!isLoading && !isError && <MovieList movies={movies} />}
+          {isError && <ErrorMessage message={isError} />}
         </Box>
 
         <Box>
