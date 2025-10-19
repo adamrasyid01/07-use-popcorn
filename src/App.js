@@ -76,8 +76,8 @@ function Logo() {
     </div>
   );
 }
-function Search() {
-  const [query, setQuery] = useState("");
+function Search({query,setQuery}) {
+ 
   return (
     <input
       className="search"
@@ -89,10 +89,10 @@ function Search() {
   );
 }
 
-function NumResults() {
+function NumResults({movies}) {
   return (
     <p className="num-results">
-      Found <strong>X</strong> results
+      Found <strong>{movies.length}</strong> results
     </p>
   );
 }
@@ -104,21 +104,43 @@ function Main({ children }) {
 }
 
 export default function App() {
+  const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState("");
-  const query = "interstellar";
+  const [selectedId, setSelectedId] = useState(null);
+  const tempQuery = "interstellar";
+
+  useEffect(function (){
+    console.log('A')
+  })
+
+  useEffect(function (){
+    console.log('B')
+  })
+
+  console.log('C')
+
+  function handleSelectMovie(id){
+    setSelectedId((selectedId) => id === selectedId ? null : id);
+  }
+
+  function handleCloseMovie(){
+    setSelectedId(null);
+  }
 
   // Gunakan UseEffect saat fetch api
   useEffect(function () {
     async function fetchMovies() {
       try {
         setIsLoading(true);
+        setIsError("");
         const res = await fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=${query}`);
 
         const data = await res.json();
         setMovies(data.Search);
+        console.log(data.Search);
         // console.log(movies);
 
         if (!res.ok) throw new Error("Something went wrong with fetching movies");
@@ -131,26 +153,37 @@ export default function App() {
         setIsLoading(false);
       }
     }
+
+    if(query.length < 3){
+      setMovies([]);
+      setIsError("");
+      return;
+    }
     fetchMovies();
-  }, []);
+  }, [query]);
   return (
     <>
       <Navbar>
         {/* <Logo /> */}
-        {/* <Search /> */}
+         <Search query={query} setQuery={setQuery}/> 
         <NumResults movies={movies} />
       </Navbar>
       <Main>
         <Box>
           {/* {isLoading ? <Loader /> : <MovieList movies={movies} />} */}
           {isLoading && <Loader />}
-          {!isLoading && !isError && <MovieList movies={movies} />}
+          {!isLoading && !isError && <MovieList movies={movies} onSelectMovie={handleSelectMovie} />}
           {isError && <ErrorMessage message={isError} />}
         </Box>
 
         <Box>
-          <WatchedSummary watched={watched} />
+          {
+            selectedId ?( <MovieDetails selectedId={selectedId} onCloseMovie={handleCloseMovie}/>): (
+            <>
+            <WatchedSummary watched={watched} />
           <WatchedMoviesList watched={watched} />
+            </>
+            )}
         </Box>
       </Main>
     </>
@@ -169,9 +202,9 @@ function Box({ children }) {
   );
 }
 
-function Movie({ movie }) {
+function Movie({ movie, onSelectMovie }) {
   return (
-    <li key={movie.imdbID}>
+    <li key={movie.imdbID} onClick={() => onSelectMovie(movie.imdbID)}>
       <img src={movie.Poster} alt={`${movie.Title} poster`} />
       <h3>{movie.Title}</h3>
       <div>
@@ -183,11 +216,11 @@ function Movie({ movie }) {
     </li>
   );
 }
-function MovieList({ movies }) {
+function MovieList({ movies, onSelectMovie }) {
   return (
-    <ul className="list">
+    <ul className="list list-movies">
       {movies?.map((movie) => (
-        <Movie movie={movie} key={movie.imdbID} />
+        <Movie movie={movie} key={movie.imdbID} onSelectMovie={onSelectMovie} />
       ))}
     </ul>
   );
@@ -212,6 +245,14 @@ function WatchedBox() {
   );
 }
   */
+
+
+function MovieDetails({selectedId, onCloseMovie}){
+  return <div className="detais">
+    <button className="btn-black" onClick = {onCloseMovie}>&larr;</button>
+    {selectedId}
+    </div>
+}
 
 function WatchedSummary({ watched }) {
   const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
@@ -274,3 +315,4 @@ function WatchedMovie({ movie }) {
     </li>
   );
 }
+
