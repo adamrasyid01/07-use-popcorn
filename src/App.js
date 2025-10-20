@@ -140,23 +140,27 @@ export default function App() {
   // Gunakan UseEffect saat fetch api
   useEffect(
     function () {
+      const controller = new AbortController();
       async function fetchMovies() {
         try {
           setIsLoading(true);
           setIsError("");
-          const res = await fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=${query}`);
-
-          const data = await res.json();
-          setMovies(data.Search);
-          console.log(data.Search);
-          // console.log(movies);
+          const res = await fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=${query}`, { signal: controller.signal });
 
           if (!res.ok) throw new Error("Something went wrong with fetching movies");
+          const data = await res.json();
 
           if (data.Response === "False") throw new Error("Movie Not Found");
+
+          setMovies(data.Search);
+          setIsError("");
+          console.log(data.Search);
+          // console.log(movies);
         } catch (err) {
           // console.error(err.message);
-          setIsError(err.message);
+          if (err.name !== "Abort Error") {
+            setIsError(err.message);
+          }
         } finally {
           setIsLoading(false);
         }
@@ -168,6 +172,10 @@ export default function App() {
         return;
       }
       fetchMovies();
+      // Batalkan request sebelumnyasaat render terbaru
+      return function () {
+        controller.abort();
+      };
     },
     [query]
   );
@@ -312,6 +320,18 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     }
     getMovieDetails();
   }, [selectedId]);
+
+  // Mengubah Page Title
+  useEffect(() => {
+    console.log("Title sekarang", title);
+    if (!title) return;
+    document.title = `Movie | ${title}`;
+
+    return function () {
+      document.title = "usePopcorn";
+      console.log(`Clean up effect for movie ${title}`);
+    };
+  }, [title]);
   return (
     <div className="details">
       {isLoading ? (
@@ -412,11 +432,11 @@ function WatchedMovie({ movie, onDeleteWatched }) {
       <div>
         <p>
           <span>⭐️</span>
-          <span>{movie.imdbRating}</span>
+          <span>{movie.imdbRating.toFixed(2)}</span>
         </p>
         <p>
           <span>🌟</span>
-          <span>{movie.userRating}</span>
+          <span>{movie.userRating.toFixed(2)}</span>
         </p>
         <p>
           <span>⏳</span>
