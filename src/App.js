@@ -171,6 +171,7 @@ export default function App() {
         setIsError("");
         return;
       }
+      handleCloseMovie();
       fetchMovies();
       // Batalkan request sebelumnyasaat render terbaru
       return function () {
@@ -306,6 +307,20 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     onAddWatched(newWatchedMovie);
     onCloseMovie();
   }
+
+  // Saat pencet Esc detail film ketutup
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.code === "Escape") {
+        onCloseMovie();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+
+    return function () {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onCloseMovie]);
 
   useEffect(() => {
     // mendapat movie berdasarkan id yang terpilih
